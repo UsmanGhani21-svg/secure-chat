@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Ultra-secure anonymous chat application with vanilla HTML/CSS/JS",
   "main": "server/index.js",
+  "type": "module",
   "scripts": {
     "dev": "node server/index.js",
     "start": "node server/index.js"
@@ -25,4 +26,5 @@
     "node": ">=16.0.0"
   }
 }
+
 
