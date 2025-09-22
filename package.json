@@ -2,10 +2,10 @@
   "name": "securechat-vanilla",
   "version": "1.0.0",
   "description": "Ultra-secure anonymous chat application with vanilla HTML/CSS/JS",
-  "main": "api/socket.js",
+  "main": "server/index.js",
   "scripts": {
-    "dev": "node api/socket.js",
-    "start": "node api/socket.js"
+    "dev": "node server/index.js",
+    "start": "node server/index.js"
   },
   "keywords": [
     "secure",
@@ -25,3 +25,4 @@
     "node": ">=16.0.0"
   }
 }
+
