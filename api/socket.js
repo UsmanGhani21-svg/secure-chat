@@ -15,12 +15,17 @@ const io = new Server(server, {
   cors: { origin: "*" },
 });
 
-// serve static frontend (public folder)
+// ✅ Serve static frontend (public folder)
 app.use(express.static(path.join(__dirname, "public")));
+
+// ✅ Root route → index.html
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
+});
 
 // -------------------- CORE DATA STRUCTURES --------------------
 let activeConnections = new Map(); // socketId -> connection info
-let activeRooms = new Map(); // roomId -> room info
+let activeRooms = new Map();       // roomId -> room info
 
 // -------------------- HELPERS --------------------
 function generateAnonymousId() {
@@ -170,6 +175,3 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
 });
-
-
-
