@@ -12,7 +12,7 @@ class SecureChatApp {
         this.rooms = [];
         this.connectionStatus = 'disconnected';
         this.isAuthenticated = false;
-        
+
         // Initialize app
         this.init();
     }
@@ -21,21 +21,21 @@ class SecureChatApp {
         try {
             // Show loading screen
             this.showScreen('loadingScreen');
-            
+
             // Initialize encryption
             await this.initializeEncryption();
-            
+
             // Initialize socket connection
             this.initializeSocket();
-            
+
             // Setup event listeners
             this.setupEventListeners();
-            
+
             // Complete initialization
             setTimeout(() => {
                 this.showScreen('authScreen');
             }, 2000);
-            
+
         } catch (error) {
             console.error('App initialization failed:', error);
             this.showNotification('Initialization Failed', error.message, 'error');
@@ -45,11 +45,11 @@ class SecureChatApp {
     async initializeEncryption() {
         try {
             this.updateLoadingProgress(25, '🔐 Initializing encryption...');
-            
+
             this.encryption = await SecureEncryption.initialize();
-            
+
             this.updateLoadingProgress(50, '🛡️ Keys generated successfully...');
-            
+
             console.log('✅ Encryption system ready');
         } catch (error) {
             throw new Error('Encryption initialization failed: ' + error.message);
@@ -61,12 +61,13 @@ class SecureChatApp {
             this.updateLoadingProgress(75, '🌐 Connecting to secure server...');
 
             // ✅ Updated for Vercel deployment
-            this.socket = io("/", {
-                path: "/api/socket",
+            // ✅ Updated for Render deployment
+            this.socket = io(window.location.origin, {
                 transports: ["websocket", "polling"],
                 timeout: 20000,
                 forceNew: true
             });
+
 
             // Connection events
             this.socket.on('connect', () => {
