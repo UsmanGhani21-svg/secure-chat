@@ -62,7 +62,7 @@ module.exports = (io) => {
       if (conn) {
         conn.profile = profile;
         conn.lastActivity = Date.now();
-        socket.emit("profileSetup", { success: true });
+        socket.emit("profileSetupComplete", { success: true });
       }
     });
 
