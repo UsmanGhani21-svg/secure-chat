@@ -1,0 +1,27 @@
+{
+  "name": "securechat-vanilla",
+  "version": "1.0.0",
+  "description": "Ultra-secure anonymous chat application with vanilla HTML/CSS/JS",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vercel dev",
+    "build": "echo 'No build step required'",
+    "start": "vercel dev"
+  },
+  "keywords": [
+    "secure",
+    "chat",
+    "anonymous",
+    "encryption",
+    "zero-knowledge"
+  ],
+  "author": "SecureChat Team",
+  "license": "MIT",
+  "dependencies": {
+    "socket.io": "^4.7.2",
+    "socket.io-client": "^4.7.2"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
