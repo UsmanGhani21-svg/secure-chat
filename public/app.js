@@ -56,38 +56,41 @@ class SecureChatApp {
         }
     }
 
-    initializeSocket() {
-        try {
-            this.updateLoadingProgress(75, '🌐 Connecting to secure server...');
+  initializeSocket() {
+    try {
+        this.updateLoadingProgress(75, '🌐 Connecting to secure server...');
 
-            // ✅ Updated for Vercel deployment
-            // ✅ Updated for Render deployment
-            this.socket = io(window.location.origin, {
-                transports: ["websocket", "polling"],
-                timeout: 20000,
-                forceNew: true
-            });
+        // ✅ Works both on Render (production) and localhost (development)
+        const socketUrl =
+            window.location.hostname === "localhost"
+                ? "http://localhost:10000"
+                : window.location.origin;
 
+        this.socket = io(socketUrl, {
+            transports: ["websocket", "polling"],
+            timeout: 20000,
+            forceNew: true
+        });
 
-            // Connection events
-            this.socket.on('connect', () => {
-                this.connectionStatus = 'connected';
-                this.updateConnectionStatus();
-                console.log('🔌 Connected to Vercel socket server:', this.socket.id);
-                this.updateLoadingProgress(100, '✅ Connection established');
-            });
+        // Connection events
+        this.socket.on('connect', () => {
+            this.connectionStatus = 'connected';
+            this.updateConnectionStatus();
+            console.log('🔌 Connected to socket server:', this.socket.id);
+            this.updateLoadingProgress(100, '✅ Connection established');
+        });
 
-            this.socket.on('disconnect', (reason) => {
-                this.connectionStatus = 'disconnected';
-                this.updateConnectionStatus();
-                console.log('🔌 Disconnected:', reason);
-                this.showNotification('Connection Lost', 'Attempting to reconnect...', 'warning');
-            });
+        this.socket.on('disconnect', (reason) => {
+            this.connectionStatus = 'disconnected';
+            this.updateConnectionStatus();
+            console.log('🔌 Disconnected:', reason);
+            this.showNotification('Connection Lost', 'Attempting to reconnect...', 'warning');
+        });
 
-            this.socket.on('connect_error', (error) => {
-                console.error('Connection error:', error);
-                this.showNotification('Connection Error', 'Failed to connect to server', 'error');
-            });
+        this.socket.on('connect_error', (error) => {
+            console.error('Connection error:', error);
+            this.showNotification('Connection Error', 'Failed to connect to server', 'error');
+        });
 
             // Authentication events
             this.socket.on('authenticated', (data) => {
