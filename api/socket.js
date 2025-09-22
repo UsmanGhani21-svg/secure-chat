@@ -1,3 +1,4 @@
+// /api/socket.js
 import { Server } from "socket.io";
 
 let io;
@@ -35,7 +36,7 @@ function runCleanup() {
   let cleanedConnections = 0;
   let cleanedRooms = 0;
 
-  // 🔹 Clean inactive connections (>30 min)
+  // Clean inactive connections (>30 min)
   for (const [socketId, connection] of activeConnections.entries()) {
     if (now - connection.lastActivity > 30 * 60 * 1000) {
       activeConnections.delete(socketId);
@@ -43,16 +44,21 @@ function runCleanup() {
     }
   }
 
-  // 🔹 Clean inactive/empty rooms (>1 hr or no participants)
+  // Clean inactive/empty rooms (>1 hr or no participants)
   for (const [roomId, room] of activeRooms.entries()) {
-    if (room.participants.size === 0 || now - room.lastActivity > 60 * 60 * 1000) {
+    if (
+      room.participants.size === 0 ||
+      now - room.lastActivity > 60 * 60 * 1000
+    ) {
       activeRooms.delete(roomId);
       cleanedRooms++;
     }
   }
 
   if (cleanedConnections > 0 || cleanedRooms > 0) {
-    console.log(`🧹 Cleanup: ${cleanedConnections} connections, ${cleanedRooms} rooms`);
+    console.log(
+      `🧹 Cleanup: ${cleanedConnections} connections, ${cleanedRooms} rooms`
+    );
   }
 }
 
@@ -64,7 +70,12 @@ export default function handler(req, res) {
       path: "/api/socket",
       addTrailingSlash: false,
       transports: ["websocket", "polling"],
-      cors: { origin: "*" },
+      cors: {
+        origin: process.env.VERCEL_URL
+          ? `https://${process.env.VERCEL_URL}`
+          : "http://localhost:3000",
+        methods: ["GET", "POST"],
+      },
     });
 
     io.on("connection", (socket) => {
@@ -80,7 +91,7 @@ export default function handler(req, res) {
         profile: null,
       });
 
-      // 🔹 Authentication
+      // Authentication
       socket.on("authenticate", () => {
         const sessionToken = generateAnonymousId();
         const conn = activeConnections.get(socket.id);
@@ -95,7 +106,7 @@ export default function handler(req, res) {
         });
       });
 
-      // 🔹 Profile setup
+      // Profile setup
       socket.on("setupProfile", (data) => {
         const connection = activeConnections.get(socket.id);
         if (!connection?.isAuthenticated)
@@ -103,7 +114,9 @@ export default function handler(req, res) {
 
         const displayName = data.displayName?.trim();
         if (!displayName || displayName.length > 50) {
-          return socket.emit("profileSetupFailed", { error: "Invalid display name" });
+          return socket.emit("profileSetupFailed", {
+            error: "Invalid display name",
+          });
         }
 
         connection.profile = { displayName, anonymousId };
@@ -115,14 +128,18 @@ export default function handler(req, res) {
         });
       });
 
-      // 🔹 Create room
+      // Create room
       socket.on("createRoom", () => {
         const connection = activeConnections.get(socket.id);
         if (!connection?.isAuthenticated)
           return socket.emit("error", { code: "NOT_AUTHENTICATED" });
 
         const roomId = generateRoomId();
-        const room = { id: roomId, participants: new Set([socket.id]), lastActivity: Date.now() };
+        const room = {
+          id: roomId,
+          participants: new Set([socket.id]),
+          lastActivity: Date.now(),
+        };
         activeRooms.set(roomId, room);
         connection.rooms.add(roomId);
         socket.join(roomId);
@@ -133,7 +150,7 @@ export default function handler(req, res) {
         });
       });
 
-      // 🔹 Join room
+      // Join room
       socket.on("joinRoom", ({ roomCode }) => {
         const connection = activeConnections.get(socket.id);
         if (!connection?.isAuthenticated)
@@ -141,7 +158,11 @@ export default function handler(req, res) {
 
         let room = activeRooms.get(roomCode);
         if (!room) {
-          room = { id: roomCode, participants: new Set(), lastActivity: Date.now() };
+          room = {
+            id: roomCode,
+            participants: new Set(),
+            lastActivity: Date.now(),
+          };
           activeRooms.set(roomCode, room);
         }
 
@@ -160,7 +181,7 @@ export default function handler(req, res) {
         });
       });
 
-      // 🔹 Messaging
+      // Messaging
       socket.on("sendMessage", ({ roomId, encryptedMessage, messageId }) => {
         const connection = activeConnections.get(socket.id);
         if (!connection?.isAuthenticated) return;
@@ -190,7 +211,7 @@ export default function handler(req, res) {
         socket.emit("messageDelivered", { messageId, delivered: true });
       });
 
-      // 🔹 File sharing
+      // File sharing
       socket.on("shareFile", ({ roomId, encryptedFile, fileMetadata, fileId }) => {
         const connection = activeConnections.get(socket.id);
         if (!connection?.isAuthenticated)
@@ -198,10 +219,16 @@ export default function handler(req, res) {
 
         const room = activeRooms.get(roomId);
         if (!room?.participants.has(socket.id))
-          return socket.emit("fileShareFailed", { error: "Not a member", fileId });
+          return socket.emit("fileShareFailed", {
+            error: "Not a member",
+            fileId,
+          });
 
         if (!encryptedFile || !fileMetadata || !fileId) {
-          return socket.emit("fileShareFailed", { error: "Missing fields", fileId });
+          return socket.emit("fileShareFailed", {
+            error: "Missing fields",
+            fileId,
+          });
         }
 
         if (fileMetadata.size > 10 * 1024 * 1024) {
@@ -227,19 +254,19 @@ export default function handler(req, res) {
         socket.emit("fileShared", { fileId, shared: true });
       });
 
-      // 🔹 Typing indicator
+      // Typing indicator
       socket.on("typing", ({ roomId, isTyping }) => {
         socket.to(roomId).emit("userTyping", { isTyping });
       });
 
-      // 🔹 Disconnect
+      // Disconnect
       socket.on("disconnect", () => {
         console.log(`❌ Disconnected: ${anonymousId.substring(0, 8)}...`);
         activeConnections.delete(socket.id);
       });
     });
 
-    // 🔹 Run cleanup every 5 minutes while instance is alive
+    // Run cleanup every 5 minutes
     setInterval(runCleanup, 5 * 60 * 1000);
 
     res.socket.server.io = io;
@@ -247,4 +274,5 @@ export default function handler(req, res) {
 
   res.end();
 }
+
 
